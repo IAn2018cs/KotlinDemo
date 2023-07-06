@@ -2,6 +2,8 @@ import kotlinx.coroutines.*
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
+
+// -Dkotlinx.coroutines.debug
 fun main() = runBlocking {
     test11()
 }
