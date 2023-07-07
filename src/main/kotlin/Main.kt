@@ -5,7 +5,7 @@ import kotlin.system.measureTimeMillis
 
 // -Dkotlinx.coroutines.debug
 fun main() = runBlocking {
-    test7()
+    test12()
 }
 
 fun test1() = runBlocking {
@@ -132,23 +132,18 @@ fun test8() = runBlocking {
     var job1: Job? = null
     var job2: Job? = null
     var job3: Job? = null
-
     parentJob = launch {
         job1 = launch {
             delay(1000L)
         }
-
         job2 = launch {
             delay(3000L)
         }
-
         job3 = launch {
             delay(5000L)
         }
     }
-
     delay(500L)
-
     parentJob.children.forEachIndexed { index, job ->
         when (index) {
             0 -> println("job1 === job is ${job1 === job}")
@@ -156,7 +151,6 @@ fun test8() = runBlocking {
             2 -> println("job3 === job is ${job3 === job}")
         }
     }
-
     parentJob.join() // 这里会挂起大约5秒钟
     logX("Process end!")
 }
@@ -167,29 +161,24 @@ fun test9() = runBlocking {
     var job1: Job? = null
     var job2: Job? = null
     var job3: Job? = null
-
     parentJob = launch {
         job1 = launch {
             logX("Job1 start!")
             delay(1000L)
             logX("Job1 done!") // ①，不会执行
         }
-
         job2 = launch {
             logX("Job2 start!")
             delay(3000L)
             logX("Job2 done!") // ②，不会执行
         }
-
         job3 = launch {
             logX("Job3 start!")
             delay(5000L)
             logX("Job3 done!")// ③，不会执行
         }
     }
-
     delay(500L)
-
     parentJob.children.forEachIndexed { index, job ->
         when (index) {
             0 -> println("job1 === job is ${job1 === job}")
@@ -197,84 +186,94 @@ fun test9() = runBlocking {
             2 -> println("job3 === job is ${job3 === job}")
         }
     }
-
     parentJob.cancel() // 变化在这里
     logX("Process end!")
 }
 
 
 fun test10() = runBlocking {
-    suspend fun getResult1(): String {
+    suspend fun getPhotoInfo(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result1"
+        return "photo info"
     }
-
-    suspend fun getResult2(): String {
+    suspend fun getPhotoLikeList(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result2"
+        return "photo like list"
     }
-
-    suspend fun getResult3(): String {
+    suspend fun getPhotoCommentList(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result3"
+        return "photo comment list"
     }
 
-    val results = mutableListOf<String>()
-
-    val time = measureTimeMillis {
-        results.add(getResult1())
-        results.add(getResult2())
-        results.add(getResult3())
+    val deferred = async {
+        val results = mutableListOf<String>()
+        // measureTimeMillis 是 kotlin 里一个统计执行时间的方法
+        val time = measureTimeMillis {
+            results.add(getPhotoInfo())
+            results.add(getPhotoLikeList())
+            results.add(getPhotoCommentList())
+        }
+        println("Cost Time: $time")
+        results
     }
-    println("Time: $time")
-    println(results)
+
+    println("开始展示 UI: ${deferred.await()}")
 }
 
 
 fun test11() = runBlocking {
-    suspend fun getResult1(): String {
+    suspend fun getPhotoInfo(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result1"
+        return "photo info"
     }
-
-    suspend fun getResult2(): String {
+    suspend fun getPhotoLikeList(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result2"
+        return "photo like list"
     }
-
-    suspend fun getResult3(): String {
+    suspend fun getPhotoCommentList(): String {
         delay(1000L) // 模拟耗时操作
-        return "Result3"
+        return "photo comment list"
     }
 
-    val results: List<String>
-
-    val time = measureTimeMillis {
-        val result1 = async { getResult1() }
-        val result2 = async { getResult2() }
-        val result3 = async { getResult3() }
-
-        results = listOf(result1.await(), result2.await(), result3.await())
+    val deferred = async {
+        val results: List<String>
+        // measureTimeMillis 是 kotlin 里一个统计执行时间的方法
+        val time = measureTimeMillis {
+            // 里面也用 async 并行请求
+            val result1 = async { getPhotoInfo() }
+            val result2 = async { getPhotoLikeList() }
+            val result3 = async { getPhotoCommentList() }
+            results = listOf(result1.await(), result2.await(), result3.await())
+        }
+        println("Cost Time: $time")
+        results
     }
 
-    println("Time: $time")
-    println(results)
+    println("开始展示 UI: ${deferred.await()}")
 }
 
 
 fun test12() = runBlocking {
-    val job = launch {
-        logX("First coroutine start!")
-        delay(1000L)
-        logX("First coroutine end!")
+
+    suspend fun fetchAll() {
+        withContext(Dispatchers.IO) {
+            var i = 0
+            while (isActive) { // 变化在这里
+                i++
+                logX("fetch i: $i")
+            }
+        }
     }
 
-    job.join()
-    val job2 = launch(job) {
-        logX("Second coroutine start!")
-        delay(1000L)
-        logX("Second coroutine end!")
+    val job = launch {
+        logX("coroutine start!")
+        fetchAll()
+        logX("coroutine end!")
     }
-    job2.join()
+
+    delay(500L)
+
+    job.cancel()
+
     logX("Process end!")
 }
