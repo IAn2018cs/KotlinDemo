@@ -5,37 +5,32 @@ import kotlin.system.measureTimeMillis
 
 // -Dkotlinx.coroutines.debug
 fun main() = runBlocking {
-    test11()
+    test7()
 }
 
 fun test1() = runBlocking {
     val job = launch {
         delay(1000L)
     }
-    job.log()    // ①
-    job.cancel() // ②
-    job.log()    // ③
-    delay(1500L)
+    job.log()             // ①
+    delay(1500L) // ②
+    job.log()             // ③
 }
 
 
 fun test2() = runBlocking {
-    //                             变化在这里
-    //                                 ↓
+    //                           变化在这里
+    //                               ↓
     val job = launch(start = CoroutineStart.LAZY) {
         logX("Coroutine start!")
         delay(1000L)
     }
-    delay(500L)
+    delay(1000L) // ①
     job.log()
-    job.start()            // 变化在这里
+    job.start()           // ②
     job.log()
-    delay(500L)
-    job.cancel()
-    delay(500L)
+    delay(1500L) // ③
     job.log()
-    delay(2000L)
-    logX("Process end!")
 }
 
 
@@ -57,16 +52,18 @@ fun test3() = runBlocking {
 fun test4() = runBlocking {
     val job = launch(start = CoroutineStart.LAZY) {
         logX("Coroutine start!")
-        delay(4000L) // 变化在这里
+        delay(1000L)
+        logX("Coroutine end!")
     }
     delay(500L)
     job.log()
     job.start()
     job.log()
-    delay(1100L)
-    job.log()
-    delay(2000L)
-    logX("Process end!")
+    delay(500L)  // ①
+    job.cancel()          // ②
+    job.log()             // ③
+    delay(2000L) // ④
+    job.log()             // ⑤
 }
 
 
@@ -78,29 +75,51 @@ fun test5() = runBlocking {
         delay(time)
     }
 
-    val job = launch(start = CoroutineStart.LAZY) {
+    val job = launch {
         logX("Coroutine start!")
         download()
         logX("Coroutine end!")
     }
-    delay(500L)
     job.log()
-    job.start()
+    job.join()      // 等待协程执行完毕
+    job.log()
+}
+
+fun test6() = runBlocking {
+    suspend fun download() {
+        // 模拟下载任务
+        val time = (Random.nextDouble() * 1000).toLong()
+        logX("Delay time: = $time")
+        delay(time)
+    }
+
+    val job = launch {
+        logX("Coroutine start!")
+        download()
+        logX("Coroutine end!")
+    }
     job.log()
     job.invokeOnCompletion {
-        job.log() // 协程结束以后就会调用这里的代码
+        job.log()   // 协程结束以后就会调用这里的代码
     }
-    job.join()      // 等待协程执行完毕
-    logX("Process end!")
+    job.join()
 }
 
 
-fun test6() = runBlocking {
+fun test7() = runBlocking {
+    suspend fun download(): String {
+        // 模拟下载任务
+        val time = (Random.nextDouble() * 1000).toLong()
+        logX("Delay time: = $time")
+        delay(time)
+        return "download result!"
+    }
+
     val deferred = async {
         logX("Coroutine start!")
-        delay(1000L)
+        val result = download()
         logX("Coroutine end!")
-        "Coroutine result!"
+        return@async result
     }
     val result = deferred.await()
     println("Result = $result")
@@ -108,7 +127,7 @@ fun test6() = runBlocking {
 }
 
 
-fun test7() = runBlocking {
+fun test8() = runBlocking {
     val parentJob: Job
     var job1: Job? = null
     var job2: Job? = null
@@ -143,7 +162,7 @@ fun test7() = runBlocking {
 }
 
 
-fun test8() = runBlocking {
+fun test9() = runBlocking {
     val parentJob: Job
     var job1: Job? = null
     var job2: Job? = null
@@ -184,7 +203,7 @@ fun test8() = runBlocking {
 }
 
 
-fun test9() = runBlocking {
+fun test10() = runBlocking {
     suspend fun getResult1(): String {
         delay(1000L) // 模拟耗时操作
         return "Result1"
@@ -212,7 +231,7 @@ fun test9() = runBlocking {
 }
 
 
-fun test10() = runBlocking {
+fun test11() = runBlocking {
     suspend fun getResult1(): String {
         delay(1000L) // 模拟耗时操作
         return "Result1"
@@ -243,7 +262,7 @@ fun test10() = runBlocking {
 }
 
 
-fun test11() = runBlocking {
+fun test12() = runBlocking {
     val job = launch {
         logX("First coroutine start!")
         delay(1000L)
